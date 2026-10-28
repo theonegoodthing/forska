@@ -18,11 +18,11 @@
     .container {
       width: 100%;
       max-width: 500px;
-      margin-top: 20px;
+      margin-top: 15px;
     }
     h1 {
       font-size: 1.5rem;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: #ffffff;
     }
     p.subtitle {
@@ -30,25 +30,35 @@
       font-size: 0.9rem;
       margin-bottom: 20px;
     }
-    textarea {
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-bottom: 6px;
+    }
+    input[type="email"], textarea {
       width: 100%;
-      height: 140px;
-      padding: 14px;
+      padding: 12px 14px;
       border-radius: 10px;
       background: #1e1e1e;
       border: 1px solid #333;
       color: #fff;
       font-size: 16px;
-      resize: vertical;
       outline: none;
+      box-sizing: border-box;
+      margin-bottom: 16px;
     }
-    textarea:focus {
+    input[type="email"]:focus, textarea:focus {
       border-color: #e67e22;
+    }
+    textarea {
+      height: 140px;
+      resize: vertical;
     }
     button {
       width: 100%;
       padding: 16px;
-      margin-top: 15px;
+      margin-top: 5px;
       background: #e67e22;
       color: #fff;
       border: none;
@@ -97,7 +107,11 @@
     <h1>🔬 Forskningsagent</h1>
     <p class="subtitle">Skicka in en frågeställning till molnet och stäng sidan.</p>
 
-    <textarea id="fraga" placeholder="Skriv din forskningsfråga här (t.ex. om humlekemi, mäsktemperaturer eller hårdvara)..."></textarea>
+    <label for="epost">Skicka resultat till e-post:</label>
+    <input type="email" id="epost" placeholder="din.adress@gmail.com" required>
+
+    <label for="fraga">Forskningsfråga:</label>
+    <textarea id="fraga" placeholder="Skriv din forskningsfråga här..."></textarea>
     
     <button id="skickaKnapp" onclick="skickaTillMolnet()">Starta bakgrundsforskning</button>
 
@@ -107,16 +121,35 @@
   <script>
     const ENDPOINT = "https://forsknings-agent-740210746972.europe-north1.run.app";
 
+    // Fyll i sparad e-postadress automatiskt vid laddning
+    window.addEventListener("DOMContentLoaded", () => {
+      const sparadEpost = localStorage.getItem("forskar_epost");
+      if (sparadEpost) {
+        document.getElementById("epost").value = sparadEpost;
+      }
+    });
+
     async function skickaTillMolnet() {
+      const epostFalt = document.getElementById("epost");
       const textFalt = document.getElementById("fraga");
       const statusRuta = document.getElementById("status");
       const knapp = document.getElementById("skickaKnapp");
+
+      const epost = epostFalt.value.trim();
       const fraga = textFalt.value.trim();
+
+      if (!epost || !epost.includes("@")) {
+        alert("Ange en giltig e-postadress!");
+        return;
+      }
 
       if (!fraga) {
         alert("Skriv in en frågeställning först!");
         return;
       }
+
+      // Spara e-postadressen till nästa besök
+      localStorage.setItem("forskar_epost", epost);
 
       knapp.disabled = true;
       statusRuta.className = "loading";
@@ -127,7 +160,10 @@
         const res = await fetch(ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fraga: fraga })
+          body: JSON.stringify({ 
+            fraga: fraga,
+            epost: epost 
+          })
         });
 
         if (!res.ok) {
@@ -136,7 +172,7 @@
 
         const data = await res.json();
         statusRuta.className = "success";
-        statusRuta.innerHTML = "✅ <strong>Uppdrag mottaget!</strong><br><br>Agenten forskar nu i bakgrunden hos Google. Du kan stänga denna flik, släcka skärmen eller lägga undan mobilen.";
+        statusRuta.innerHTML = `✅ <strong>Uppdrag mottaget!</strong><br><br>Agenten forskar nu i bakgrunden hos Google. Slutrapporten skickas till <strong>${epost}</strong> när den är klar.<br><br>Du kan stänga denna flik eller lägga undan mobilen nu.`;
         textFalt.value = "";
       } catch (err) {
         statusRuta.className = "error";
