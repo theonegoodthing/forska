@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forskningsagent - Fjärrkontroll</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 20px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+    p.subtitle {
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 140px;
+      padding: 14px;
+      border-radius: 10px;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      color: #fff;
+      font-size: 16px;
+      resize: vertical;
+      outline: none;
+    }
+    textarea:focus {
+      border-color: #e67e22;
+    }
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 15px;
+      background: #e67e22;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:active {
+      background: #d35400;
+    }
+    button:disabled {
+      background: #444;
+      color: #888;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      display: none;
+    }
+    .success {
+      background: #1b4332;
+      color: #74c69d;
+      border: 1px solid #2d6a4f;
+    }
+    .error {
+      background: #491217;
+      color: #ff8fa3;
+      border: 1px solid #5c1d24;
+    }
+    .loading {
+      background: #2a2a2a;
+      color: #aaa;
+      border: 1px solid #444;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🔬 Forskningsagent</h1>
+    <p class="subtitle">Skicka in en frågeställning till molnet och stäng sidan.</p>
+
+    <textarea id="fraga" placeholder="Skriv din forskningsfråga här (t.ex. om humlekemi, mäsktemperaturer eller hårdvara)..."></textarea>
+    
+    <button id="skickaKnapp" onclick="skickaTillMolnet()">Starta bakgrundsforskning</button>
+
+    <div id="status"></div>
+  </div>
+
+  <script>
+    const ENDPOINT = "https://forsknings-agent-740210746972.europe-north1.run.app";
+
+    async function skickaTillMolnet() {
+      const textFalt = document.getElementById("fraga");
+      const statusRuta = document.getElementById("status");
+      const knapp = document.getElementById("skickaKnapp");
+      const fraga = textFalt.value.trim();
+
+      if (!fraga) {
+        alert("Skriv in en frågeställning först!");
+        return;
+      }
+
+      knapp.disabled = true;
+      statusRuta.className = "loading";
+      statusRuta.style.display = "block";
+      statusRuta.innerText = "Kontaktar Google Cloud...";
+
+      try {
+        const res = await fetch(ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fraga: fraga })
+        });
+
+        if (!res.ok) {
+          throw new Error("HTTP-fel: " + res.status);
+        }
+
+        const data = await res.json();
+        statusRuta.className = "success";
+        statusRuta.innerHTML = "✅ <strong>Uppdrag mottaget!</strong><br><br>Agenten forskar nu i bakgrunden hos Google. Du kan stänga denna flik, släcka skärmen eller lägga undan mobilen.";
+        textFalt.value = "";
+      } catch (err) {
+        statusRuta.className = "error";
+        statusRuta.innerHTML = "❌ <strong>Kunde inte nå molnet:</strong><br>" + err.message;
+        knapp.disabled = false;
+      }
+    }
+  </script>
+
+</body>
+</html>
